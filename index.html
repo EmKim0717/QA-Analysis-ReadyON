@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-pink-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Ticket Analysis</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pink: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f472b6',
+                            400: '#f43f5e',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for QA Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- XLSX library with style support for styled Excel exports -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
+            background-color: #fdf2f8; /* Pink 50 */
+            -webkit-font-smoothing: antialiased;
+        }
+        /* Custom Mac Scrollbar */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(252, 231, 243, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f472b6;
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #db2777;
+        }
+        .ticket-green {
+            background-color: #ecfdf5 !important; /* Emerald 50 */
+            border-left: 4px solid #10b981 !important;
+        }
+        .ticket-yellow {
+            background-color: #fffbeb !important; /* Amber 50 */
+            border-left: 4px solid #f59e0b !important;
+        }
+        .ticket-red {
+            background-color: #fef2f2 !important; /* Rose 50 */
+            border-left: 4px solid #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col w-full overflow-x-hidden">
+
+    <header class="bg-white border-b border-pink-200 sticky top-0 z-30 shadow-sm backdrop-blur-md bg-white/90 w-full">
+        <div class="w-full px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-rose-400 flex items-center justify-center text-white shadow-md shadow-pink-200">
+                    <i class="fa-solid font-bold fa-clipboard-check text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold text-pink-950 leading-tight flex items-center gap-2">
+                        <span>QA Ticket Analysis</span>
+                        <span class="text-[10px] bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full font-semibold border border-pink-200 hidden sm:inline">ITSM / ITIL & SOP Workstation</span>
+                    </h1>
+                    <p class="text-xs text-pink-600 font-medium">Full-Screen Enterprise Quality Assurance Workstation</p>
+                </div>
+            </div>
+
+            <!-- Stats Header Quick Badges -->
+            <div class="hidden lg:flex items-center space-x-3 text-xs font-medium">
+                <span class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="stat-green-count">0</span> Fresh (&le;48h)
+                </span>
+                <span class="px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span id="stat-yellow-count">0</span> Attention (&gt;48h)
+                </span>
+                <span class="px-3 py-1.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-bounce"></span>
+                    <span id="stat-red-count">0</span> Critical (&gt;96h)
+                </span>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <div class="flex items-center space-x-2">
+                <button onclick="exportToExcel()" title="Export styled Excel workbook" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel text-sm"></i>
+                    <span class="hidden sm:inline">Export XLSX</span>
+                </button>
+                
+                <button onclick="openSheetsModal()" title="Export or open directly in Google Sheets for Mac" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-table text-emerald-600 text-sm"></i>
+                    <span class="hidden sm:inline">Google Sheets</span>
+                </button>
+
+                <button onclick="openApiKeyModal()" title="Configure Gemini API Key for GitHub Pages or Standalone deployment" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-300 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-key text-pink-600"></i>
+                    <span class="hidden md:inline">API Key</span>
+                </button>
+
+                <button onclick="toggleChatDrawer()" class="bg-pink-600 hover:bg-pink-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5 relative">
+                    <i class="fa-solid fa-robot"></i>
+                    <span class="hidden sm:inline">AI Co-Analyst</span>
+                    <span class="flex h-2.5 w-2.5 absolute -top-1 -right-1">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-pink-500"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-pink-100/70 border-b border-pink-200 px-4 sm:px-8 w-full">
+        <div class="w-full flex space-x-1 sm:space-x-3 overflow-x-auto py-2 scrollbar-none">
+            <button onclick="switchTab('analyze')" id="tab-btn-analyze" class="px-4 py-2 text-xs font-semibold rounded-xl text-pink-700 hover:bg-pink-200/60 transition flex items-center gap-2 whitespace-nowrap bg-white text-pink-800 shadow-sm border border-pink-200">
+                <i class="fa-solid fa-wand-magic-sparkles text-pink-500"></i>
+                <span>Add & Analyze Ticket</span>
+            </button>
+            <button onclick="switchTab('list')" id="tab-btn-list" class="px-4 py-2 text-xs font-semibold rounded-xl text-pink-700 hover:bg-pink-200/60 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-list-check"></i>
+                <span>All Tickets List</span>
+                <span id="badge-total-tickets" class="bg-pink-200 text-pink-800 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+            </button>
+            <button onclick="switchTab('grouped')" id="tab-btn-grouped" class="px-4 py-2 text-xs font-semibold rounded-xl text-pink-700 hover:bg-pink-200/60 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Grouped by Assignee</span>
+            </button>
+            <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="px-4 py-2 text-xs font-semibold rounded-xl text-pink-700 hover:bg-pink-200/60 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>QA Themes & Analytics</span>
+            </button>
+            <button onclick="switchTab('sop')" id="tab-btn-sop" class="px-4 py-2 text-xs font-semibold rounded-xl text-pink-700 hover:bg-pink-200/60 transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>ITSM & QA SOP Framework</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 w-full px-4 sm:px-6 lg:px-10 py-6 space-y-6">
+
+        <!-- TAB 1: ADD & ANALYZE TICKET FORM -->
+        <section id="view-analyze" class="space-y-6 w-full">
+            <div class="bg-white rounded-2xl shadow-sm border border-pink-200 p-6 sm:p-8 w-full">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-pink-100 mb-6 gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-pink-950 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-question text-pink-600"></i>
+                            Paste Zendesk Ticket Information & Conversation
+                        </h2>
+                        <p class="text-xs text-slate-500">Paste full conversation threads. Assignee, Requester, Date Opened, and Last Update will auto-extract instantly!</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="clearFormInputs()" class="text-xs bg-pink-50 text-pink-700 hover:bg-pink-100 px-3.5 py-1.5 rounded-xl border border-pink-200 font-semibold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-eraser text-pink-500"></i> Clear Form
+                        </button>
+                    </div>
+                </div>
+
+                <form id="qa-input-form" onsubmit="handleTicketSubmit(event)" class="space-y-6">
+                    
+                    <!-- Short Description Box (Subject) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-800 mb-1 flex justify-between items-center">
+                            <span>Short Description / Ticket Subject <span class="text-pink-500">*</span></span>
+                            <span class="text-[11px] text-pink-600 font-normal">e.g., 123456 - Unable to view shifts in portal</span>
+                        </label>
+                        <input type="text" id="input-subject" placeholder="Enter brief issue summary or Zendesk subject line..." required class="w-full px-4 py-2.5 text-sm border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20 font-medium text-slate-800">
+                    </div>
+
+                    <!-- Ticket Conversation / Information Box -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-800">
+                                Ticket Information & Full Conversation Thread <span class="text-pink-500">*</span>
+                            </label>
+                            <span id="auto-parse-badge" class="text-[11px] bg-pink-100 text-pink-800 font-semibold px-2.5 py-0.5 rounded-full border border-pink-200 transition opacity-0">
+                                <i class="fa-solid fa-bolt mr-1"></i> Auto-Parsed Metadata!
+                            </span>
+                        </div>
+                        <textarea id="input-conversation" rows="7" oninput="parseConversationOnInput()" placeholder="Paste full Zendesk conversation thread here...
+
+Example format:
+John Doe, June 29 2026 08:00
+Hi team, I am having trouble accessing my shift roster.
+
+Sarah Jenkins, June 29 2026 10:00
+Thank you for coming back to us John! Let me check this right away..." required class="w-full p-4 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20 font-mono leading-relaxed text-slate-800"></textarea>
+                    </div>
+
+                    <!-- Auto-Populated Top Metadata Fields Row -->
+                    <div class="p-5 bg-pink-50/50 rounded-2xl border border-pink-200 space-y-4">
+                        <div class="flex items-center justify-between text-xs font-bold text-pink-900 border-b border-pink-200/60 pb-2">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-gear text-pink-600"></i>
+                                Ticket Metadata & SLA Timestamps
+                            </span>
+                            <span class="text-[11px] font-normal text-slate-500">Auto-extracted from pasted conversation</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ticket ID <span class="text-pink-500">*</span></label>
+                                <input type="text" id="input-id" placeholder="e.g. TCK-8492" required class="w-full px-3.5 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Assignee / Agent Name</label>
+                                <input type="text" id="input-assignee" placeholder="e.g. Sarah Jenkins" class="w-full px-3.5 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Requester / Customer Name</label>
+                                <input type="text" id="input-requester" placeholder="e.g. John Doe" class="w-full px-3.5 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Priority (ITIL Urgency)</label>
+                                <select id="input-priority" class="w-full px-3.5 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-medium">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold text-pink-900 mb-1">Requested Date (Date Opened)</label>
+                                <input type="datetime-local" id="input-requested" class="w-full px-3.5 py-2 text-xs border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-pink-900 mb-1">Updated Date (Date Last Update)</label>
+                                <input type="datetime-local" id="input-updated" class="w-full px-3.5 py-2 text-xs border border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Trigger Button Bar -->
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                        <button type="button" onclick="runAiAnalysis()" id="btn-ai-analyze" class="w-full sm:w-auto bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-700 hover:to-rose-600 text-white font-bold px-7 py-3 rounded-xl text-xs shadow-md shadow-pink-200 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-microchip"></i>
+                            <span>🤖 Auto-Fill Findings with AI Co-Analyst (ITSM & SOP)</span>
+                        </button>
+                        <span class="text-xs text-slate-400 hidden sm:inline">or manually fill the QA findings below:</span>
+                    </div>
+
+                    <div class="border-t border-pink-200 pt-5 mt-4 space-y-4">
+                        <h3 class="text-xs font-bold text-pink-950 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-pink-600"></i>
+                            QA Findings & ITSM Quality Audit
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- What was missed -->
+                            <div>
+                                <label class="block text-xs font-semibold text-red-700 mb-1">What was missed? (Process Gaps, SLA Breaches, Non-Negotiables ⚑)</label>
+                                <textarea id="input-missed" rows="3.5" placeholder="Specify process gaps, unaddressed customer questions, missing internal notes, or ITIL workflow misses..." class="w-full p-3.5 text-xs border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 bg-red-50/20 text-slate-800"></textarea>
+                            </div>
+
+                            <!-- What should have been done -->
+                            <div>
+                                <label class="block text-xs font-semibold text-emerald-700 mb-1">What should have been done? (Ideal ITSM & SOP Standard)</label>
+                                <textarea id="input-should-done" rows="3.5" placeholder="Define ideal troubleshooting, proper macro execution, L2/L3 escalation procedure, or KCS documentation..." class="w-full p-3.5 text-xs border border-emerald-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-emerald-50/20 text-slate-800"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <!-- QA Theme -->
+                            <div>
+                                <label class="block text-xs font-semibold text-pink-900 mb-1">QA Theme / Category</label>
+                                <select id="input-theme" class="w-full px-3.5 py-2.5 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white font-medium text-slate-800">
+                                    <option value="Incident & SLA Management">Incident & SLA Management</option>
+                                    <option value="Product & Technical Knowledge">Product & Technical Knowledge</option>
+                                    <option value="Soft Skills & Tone">Soft Skills & Tone</option>
+                                    <option value="Tool / System Usage">Tool / System Usage</option>
+                                    <option value="Verification & Security">Verification & Security</option>
+                                    <option value="First Contact Resolution (FCR)">First Contact Resolution (FCR)</option>
+                                    <option value="Proper Documentation (KCS)">Proper Documentation (KCS)</option>
+                                    <option value="Process & Escalation Adherence">Process & Escalation Adherence</option>
+                                    <option value="Perfect Handling">Perfect Handling / No Error</option>
+                                </select>
+                            </div>
+
+                            <!-- QA Notes -->
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold text-pink-900 mb-1">QA Notes & Coaching Tips</label>
+                                <input type="text" id="input-notes" placeholder="Constructive feedback, coaching recommendations, or Continual Service Improvement (CSI) callouts..." class="w-full px-4 py-2.5 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4 flex justify-end">
+                        <button type="submit" class="bg-pink-700 hover:bg-pink-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-pink-200 transition flex items-center gap-2 text-xs">
+                            <i class="fa-solid fa-plus-circle"></i>
+                            <span>Save Ticket to Analysis Workstation</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="view-list" class="space-y-4 hidden w-full">
+            <!-- Filter & Search Controls Header -->
+            <div class="bg-white p-4 rounded-2xl border border-pink-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 w-full">
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-pink-400 text-xs"></i>
+                    <input type="text" id="search-filter" oninput="renderTicketTable()" placeholder="Search ID, Subject, Assignee, QA Theme..." class="w-full pl-9 pr-4 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20">
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto text-xs font-semibold">
+                    <select id="status-color-filter" onchange="renderTicketTable()" class="px-3 py-2 border border-pink-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 text-xs">
+                        <option value="ALL">All SLA Statuses</option>
+                        <option value="GREEN">Green (&le; 48 hrs)</option>
+                        <option value="YELLOW">Yellow (&gt; 48-96 hrs)</option>
+                        <option value="RED">Red (&gt; 96 hrs)</option>
+                    </select>
+
+                    <select id="theme-filter" onchange="renderTicketTable()" class="px-3 py-2 border border-pink-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-pink-500 text-xs">
+                        <option value="ALL">All QA Themes</option>
+                    </select>
+
+                    <button onclick="resetFilters()" class="text-pink-600 hover:text-pink-800 px-3 py-2 rounded-xl bg-pink-50 border border-pink-200 transition text-xs">
+                        Reset Filters
+                    </button>
+                    <button onclick="clearAllTickets()" class="text-rose-600 hover:text-rose-800 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 transition text-xs">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Clear All Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-pink-200 overflow-hidden w-full">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gradient-to-r from-pink-800 to-pink-900 text-white font-bold uppercase tracking-wider text-[10px] divide-x divide-pink-700">
+                                <th class="p-3">ID</th>
+                                <th class="p-3 min-w-[160px]">Subject</th>
+                                <th class="p-3">Requester</th>
+                                <th class="p-3">Priority</th>
+                                <th class="p-3 min-w-[130px]">Requested (Opened)</th>
+                                <th class="p-3 min-w-[130px]">Updated (Last)</th>
+                                <th class="p-3">Assignee</th>
+                                <th class="p-3 min-w-[180px]">What was missed</th>
+                                <th class="p-3 min-w-[180px]">What should have been done</th>
+                                <th class="p-3">QA Theme</th>
+                                <th class="p-3 min-w-[180px]">QA Notes</th>
+                                <th class="p-3 text-center">Hours Since Updated</th>
+                                <th class="p-3 text-center">Ticket Age</th>
+                                <th class="p-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticket-table-body" class="divide-y divide-pink-100">
+                            <!-- Dynamic Content Rendered via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State Placeholder -->
+                <div id="table-empty-state" class="p-12 text-center space-y-3">
+                    <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto text-pink-500 text-2xl">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <p class="text-xs font-bold text-pink-950">No QA Tickets found</p>
+                    <p class="text-xs text-slate-500">Paste a Zendesk ticket thread to begin your first QA evaluation.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-grouped" class="space-y-6 hidden w-full">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-pink-950">Assignee Performance & ITSM QA Grouping</h2>
+                    <p class="text-xs text-slate-500">Grouped tickets and coaching evaluation per team member.</p>
+                </div>
+            </div>
+
+            <!-- Dynamic Assignee Cards Grid -->
+            <div id="assignee-cards-container" class="grid grid-cols-1 gap-6 w-full">
+                <!-- Rendered dynamically -->
+            </div>
+        </section>
+
+        <section id="view-analytics" class="space-y-6 hidden w-full">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                <div class="bg-white p-5 rounded-2xl border border-pink-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">Total Evaluated</p>
+                        <h3 id="analytics-total" class="text-2xl font-black text-pink-950">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">&le;48h Fresh SLA</p>
+                        <h3 id="analytics-green" class="text-2xl font-black text-emerald-600">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">&gt;48h-96h Stale</p>
+                        <h3 id="analytics-yellow" class="text-2xl font-black text-amber-600">0</h3>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-rose-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-semibold uppercase">&gt;96h Critical Overdue</p>
+                        <h3 id="analytics-red" class="text-2xl font-black text-rose-600">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                <div class="bg-white p-6 rounded-2xl border border-pink-200 shadow-sm">
+                    <h3 class="text-xs font-bold text-pink-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-pink-500"></i> QA Missed Themes Breakdown
+                    </h3>
+                    <div class="relative h-64">
+                        <canvas id="themeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-pink-200 shadow-sm">
+                    <h3 class="text-xs font-bold text-pink-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-pink-500"></i> SLA Aging by Priority
+                    </h3>
+                    <div class="relative h-64">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-sop" class="space-y-6 hidden w-full">
+            <div class="bg-white p-6 rounded-2xl border border-pink-200 shadow-sm space-y-6 w-full">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-pink-100 pb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-pink-950 flex items-center gap-2">
+                            <i class="fa-solid fa-book-open-reader text-pink-600"></i>
+                            ITSM Best Practices & Zendesk QA SOP Benchmark
+                        </h2>
+                        <p class="text-xs text-slate-500">Combines ITIL Service Desk Quality Assurance Standards with internal SOP guidelines. Used by the AI Co-Analyst for automated auditing.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="resetSopToDefault()" class="px-3 py-1.5 text-xs bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-xl border border-pink-200 font-semibold transition">
+                            Reset Framework Default
+                        </button>
+                        <button onclick="saveCustomSop()" class="px-4 py-1.5 text-xs bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-bold shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Active Framework
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 border-b border-pink-100 pb-2 text-xs font-semibold overflow-x-auto">
+                    <button onclick="switchSopSubTab('itsm')" id="sop-subtab-itsm" class="px-3 py-1.5 rounded-xl bg-pink-600 text-white shadow-sm">ITSM / ITIL Pillars</button>
+                    <button onclick="switchSopSubTab('categories')" id="sop-subtab-categories" class="px-3 py-1.5 rounded-xl text-pink-700 hover:bg-pink-100">SOP Categories</button>
+                    <button onclick="switchSopSubTab('nonnegotiables')" id="sop-subtab-nonnegotiables" class="px-3 py-1.5 rounded-xl text-pink-700 hover:bg-pink-100">Non-Negotiables (⚑)</button>
+                    <button onclick="switchSopSubTab('guidelines')" id="sop-subtab-guidelines" class="px-3 py-1.5 rounded-xl text-pink-700 hover:bg-pink-100">Communication Directives</button>
+                    <button onclick="switchSopSubTab('editor')" id="sop-subtab-editor" class="px-3 py-1.5 rounded-xl text-pink-700 hover:bg-pink-100">Edit Prompt Context</button>
+                </div>
+
+                <!-- SUBTAB ITSM: GLOBAL ITSM / ITIL BEST PRACTICES -->
+                <div id="sop-content-itsm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-sitemap text-pink-600"></i> 1. Triage & Categorization
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Ensure accurate classification between Incidents (service interruption) and Service Requests. Verify impact & urgency ratings align with SLA targets.</p>
+                        </div>
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock text-pink-600"></i> 2. Service Level Management
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Proactive management of First Response Time (FRT) and Resolution SLAs. Pending states must be appropriately managed to avoid idle customer tickets.</p>
+                        </div>
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-book-bookmark text-pink-600"></i> 3. Knowledge-Centered Service (KCS)
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Agents must leverage knowledge base articles, log clear troubleshooting steps, and flag missing documentation for Continual Service Improvement (CSI).</p>
+                        </div>
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-handshake-angle text-pink-600"></i> 4. End-to-End Ownership & FCR
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Drive First Contact Resolution where possible. Avoid unnecessary ping-pong transitions between tiers without actionable troubleshooting evidence.</p>
+                        </div>
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-pink-600"></i> 5. Governance & Security
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Strict verification of user identity before performing access changes. Sensitive data, passwords, or credentials must never be shared in plain text.</p>
+                        </div>
+                        <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-1.5">
+                            <span class="font-bold text-pink-900 block flex items-center gap-1.5">
+                                <i class="fa-solid fa-comments text-pink-600"></i> 6. Customer Centricity
+                            </span>
+                            <p class="text-slate-600 leading-relaxed">Empathetic, clear, and professional tone tailored to end-user technical maturity. Set explicit next steps and clear expectation timeframes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB CATEGORIES -->
+                <div id="sop-content-categories" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">1. Problem Understanding & Relevance</span>
+                            <p class="text-slate-600 leading-relaxed">Deep understanding including context, urgency, and user type. Anticipate actual customer needs.</p>
+                        </div>
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">2. Completeness & Resolution Ownership</span>
+                            <p class="text-slate-600 leading-relaxed">All questions answered with clear next steps. Propose a call after 5 touches without progress.</p>
+                        </div>
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">3. Accuracy & Product Knowledge</span>
+                            <p class="text-slate-600 leading-relaxed">Information correct and aligned with product behavior. Explains clearly without exposing internal jargon.</p>
+                        </div>
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">4. Troubleshooting Quality & Depth</span>
+                            <p class="text-slate-600 leading-relaxed">Proper investigation before escalating. Never rely solely on AI or assumptions. Include logs, links, reproduction steps.</p>
+                        </div>
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">5. Meaningful Communication</span>
+                            <p class="text-slate-600 leading-relaxed">No empty responses. Include a genuine, specific check-in referencing actual issue before standard closure.</p>
+                        </div>
+                        <div class="p-3.5 bg-pink-50/50 rounded-xl border border-pink-200 space-y-1">
+                            <span class="font-bold text-pink-900 block">6. Internal Notes Quality</span>
+                            <p class="text-slate-600 leading-relaxed">Required structure: Issue Description / Links / Actions Taken / Next Actions. Link Engineering follow-ups.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB NONNEGOTIABLES -->
+                <div id="sop-content-nonnegotiables" class="space-y-4 hidden text-xs">
+                    <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-2">
+                        <h4 class="font-bold text-rose-900 flex items-center gap-2">
+                            <i class="fa-solid fa-flag text-rose-600"></i> Critical Non-Negotiables (⚑)
+                        </h4>
+                        <ul class="grid grid-cols-1 md:grid-cols-2 gap-2 text-rose-900 font-medium">
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> Generic or irrelevant responses ignoring user query</li>
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> Escalating without basic troubleshooting</li>
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> Misuse of macros or generic sign-offs</li>
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> Poor or missing internal notes</li>
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> Incorrect or misleading technical info</li>
+                            <li class="flex items-start gap-1.5"><span class="text-rose-600">⚑</span> OTP / credentials shared directly in plain text</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- SUBTAB GUIDELINES -->
+                <div id="sop-content-guidelines" class="space-y-4 hidden text-xs">
+                    <div class="p-4 bg-pink-50/60 rounded-xl border border-pink-200 space-y-2">
+                        <h4 class="font-bold text-pink-950">Key Communication Directives</h4>
+                        <ul class="list-disc list-inside space-y-1 text-slate-700 leading-relaxed">
+                            <li><strong>Empower, don't do it for them:</strong> Guide clients with instructions.</li>
+                            <li><strong>Match greeting to stage:</strong> No "Thank you for reaching out" on follow-ups! Use "Thank you for the update".</li>
+                            <li><strong>Always use client's first name:</strong> Never use "Hi there".</li>
+                            <li><strong>Acknowledge before moving forward:</strong> "Thank you for sharing that" before next steps.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- SUBTAB EDITOR -->
+                <div id="sop-content-editor" class="space-y-2 hidden">
+                    <label class="block text-xs font-bold text-pink-900 flex justify-between items-center">
+                        <span>Active QA Framework Instructions (ITSM + SOP Guidelines)</span>
+                    </label>
+                    <textarea id="sop-rules-text" rows="14" class="w-full p-4 text-xs font-mono leading-relaxed border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20 text-slate-800"></textarea>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <aside id="chat-drawer" class="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out border-l border-pink-200 flex flex-col">
+        <div class="p-4 bg-gradient-to-r from-pink-800 to-pink-900 text-white flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-pink-100 font-bold">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold">QA Co-Analyst AI Assistant</h3>
+                    <p class="text-[10px] text-pink-200">Powered by Gemini 3 Flash • ITSM Advisor</p>
+                </div>
+            </div>
+            <button onclick="toggleChatDrawer()" class="text-pink-200 hover:text-white p-1 rounded-lg">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-pink-50/40 text-xs">
+            <div class="flex gap-2.5">
+                <div class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center flex-shrink-0 text-xs">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-pink-200 text-slate-700 shadow-sm space-y-1 max-w-[85%]">
+                    <p class="font-bold text-pink-900 text-[10px]">Co-QA Analyst AI</p>
+                    <p>Hello! I am your interactive Co-Quality Analyst. Ask about ITSM Service Desk standards, analyze QA gaps across your dataset, or request coaching advice for assignees!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-2 border-t border-pink-100 bg-white flex gap-1.5 overflow-x-auto text-[10px]">
+            <button onclick="sendQuickPrompt('Summarize top QA gaps across all tickets.')" class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-full border border-pink-200 whitespace-nowrap">
+                💡 Top QA Misses
+            </button>
+            <button onclick="sendQuickPrompt('Which assignees need urgent SLA/ITSM coaching?')" class="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-full border border-pink-200 whitespace-nowrap">
+                🎯 Urgent Coaching
+            </button>
+        </div>
+
+        <form onsubmit="handleChatMessageSubmit(event)" class="p-3 bg-white border-t border-pink-200 flex items-center space-x-2">
+            <input type="text" id="chat-input" placeholder="Ask your Co-Analyst..." required class="flex-1 px-3 py-2 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 bg-pink-50/20">
+            <button type="submit" id="chat-send-btn" class="bg-pink-600 hover:bg-pink-700 text-white p-2.5 rounded-xl transition shadow">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </form>
+    </aside>
+
+    <!-- TICKET DETAIL MODAL -->
+    <div id="ticket-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-pink-200 shadow-2xl p-6 space-y-4">
+            <div class="flex items-start justify-between border-b border-pink-100 pb-3">
+                <div>
+                    <span id="modal-ticket-id" class="text-xs font-bold px-2.5 py-1 rounded bg-pink-100 text-pink-800">TCK-0000</span>
+                    <h2 id="modal-ticket-subject" class="text-base font-bold text-pink-950 mt-1">Ticket Subject</h2>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="modal-body" class="space-y-4 text-xs"></div>
+
+            <div class="flex justify-end border-t border-pink-100 pt-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-pink-100 hover:bg-pink-200 text-pink-800 font-semibold rounded-xl text-xs">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GOOGLE SHEETS MODAL -->
+    <div id="sheets-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full border border-pink-200 shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-pink-100 pb-3">
+                <h3 class="text-sm font-bold text-pink-950 flex items-center gap-2">
+                    <i class="fa-solid fa-table text-emerald-600"></i>
+                    Google Sheets / Mac Export
+                </h3>
+                <button onclick="closeSheetsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Copy formatted ticket data to your clipboard for instant 1-click paste into Google Sheets, Excel for Mac, or Numbers.
+            </p>
+            <div class="space-y-2 pt-1">
+                <button onclick="copyTableForGoogleSheets()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>Copy TSV for Google Sheets (⌘ + V)</span>
+                </button>
+                <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 block text-center">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    <span>Open New Google Sheet (sheets.new)</span>
+                </a>
+                <button onclick="exportToCsv()" class="w-full bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-csv"></i>
+                    <span>Download Raw CSV File</span>
+                </button>
+            </div>
+            <div class="flex justify-end border-t border-pink-100 pt-3">
+                <button onclick="closeSheetsModal()" class="px-4 py-2 bg-pink-100 hover:bg-pink-200 text-pink-800 font-semibold rounded-xl text-xs">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GEMINI API KEY CONFIGURATION MODAL -->
+    <div id="api-key-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full border border-pink-200 shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-pink-100 pb-3">
+                <h3 class="text-sm font-bold text-pink-950 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-pink-600"></i>
+                    Gemini API Key Configuration
+                </h3>
+                <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+                To use the <strong>AI Co-Analyst</strong> on <strong>GitHub Pages</strong> or standalone deployment, enter your Google Gemini API Key below.
+            </p>
+
+            <div class="space-y-3 pt-1">
+                <div>
+                    <label class="block text-xs font-semibold text-pink-900 mb-1">Google Gemini API Key</label>
+                    <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 font-mono">
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="saveApiKey()" class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-2.5 rounded-xl text-xs shadow transition">
+                        Save API Key
+                    </button>
+                    <button onclick="clearApiKey()" class="bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-semibold px-4 py-2.5 rounded-xl text-xs transition">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-pink-50 p-3 rounded-xl border border-pink-200 text-[11px] text-pink-900 space-y-1">
+                <p class="font-bold">How to get a free API Key:</p>
+                <p>1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="underline font-bold text-pink-700">Google AI Studio (aistudio.google.com)</a></p>
+                <p>2. Click <strong>"Create API key"</strong> and paste it into the field above.</p>
+                <p class="text-[10px] text-slate-500 pt-1">Key is stored safely in your device's local browser storage only.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAC TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        let tickets = [];
+        let themeChartInstance = null;
+        let priorityChartInstance = null;
+
+        // Hardcoded Default Gemini API Key for zero-config GitHub Pages deployment
+        const DEFAULT_API_KEY = "AQ.Ab8RN6IccWcc8c0H3iaVD1sZg3RRjCpAQKX4Et_KJ-uSk5x4ug";
+
+        function openApiKeyModal() {
+            const savedKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+            const keyInput = document.getElementById('input-api-key');
+            if (keyInput) keyInput.value = savedKey;
+            document.getElementById('api-key-modal')?.classList.remove('hidden');
+        }
+
+        function closeApiKeyModal() {
+            document.getElementById('api-key-modal')?.classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('input-api-key')?.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                showToast('Gemini API Key saved successfully!', 'Saved');
+                closeApiKeyModal();
+            } else {
+                showToast('Please enter a valid API Key.', 'Warning');
+            }
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('gemini_api_key');
+            const keyInput = document.getElementById('input-api-key');
+            if (keyInput) keyInput.value = '';
+            showToast('API Key removed.', 'Cleared');
+        }
+
+        function saveTicketsToStorage() {
+            localStorage.setItem('qa_tickets_data', JSON.stringify(tickets));
+        }
+
+        function getActiveSopText() {
+            const sopInput = document.getElementById('sop-rules-text');
+            return (sopInput && sopInput.value) ? sopInput.value : DEFAULT_QA_SOP;
+        }
+
+        function saveCustomSop() {
+            const sopText = document.getElementById('sop-rules-text').value;
+            localStorage.setItem('qa_sop_rules', sopText);
+            showToast('QA & ITSM Framework guidelines updated successfully!', 'Framework Saved');
+        }
+
+        function resetSopToDefault() {
+            document.getElementById('sop-rules-text').value = DEFAULT_QA_SOP;
+            localStorage.removeItem('qa_sop_rules');
+            showToast('Framework reset to ITSM & SOP defaults.', 'Reset Complete');
+        }
+
+        function getHoursSinceUpdated(dateIso) {
+            if (!dateIso) return 0;
+            const date = new Date(dateIso);
+            if (isNaN(date.getTime())) return 0;
+            const diffMs = new Date() - date;
+            return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+        }
+
+        function getTicketAge(dateIso) {
+            if (!dateIso) return 'N/A';
+            const date = new Date(dateIso);
+            if (isNaN(date.getTime())) return 'N/A';
+            const diffMs = new Date() - date;
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            if (days > 0) return `${days}d ${hours}h`;
+            return `${hours}h`;
+        }
+
+        function getSlaStatus(updatedIso) {
+            const hrs = getHoursSinceUpdated(updatedIso);
+            if (hrs <= 48) return 'GREEN';
+            if (hrs <= 96) return 'YELLOW';
+            return 'RED';
+        }
+
+        function parseConversationOnInput() {
+            const text = document.getElementById('input-conversation').value;
+            if (!text || text.trim().length < 10) return;
+
+            const lineRegex = /^([A-Za-z0-9\s\.\-\'\(\)]+),\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)/gim;
+
+            let matches = [];
+            let match;
+            while ((match = lineRegex.exec(text)) !== null) {
+                matches.push({
+                    name: match[1].trim(),
+                    dateStr: match[2].trim()
+                });
+            }
+
+            if (matches.length > 0) {
+                const requesterInput = document.getElementById('input-requester');
+                if (requesterInput && (!requesterInput.value || requesterInput.value === 'N/A')) {
+                    requesterInput.value = matches[0].name;
+                }
+
+                const uniqueNames = Array.from(new Set(matches.map(m => m.name)));
+                const assigneeInput = document.getElementById('input-assignee');
+                if (assigneeInput && uniqueNames.length > 1) {
+                    assigneeInput.value = uniqueNames[1];
+                } else if (assigneeInput && uniqueNames.length === 1 && !assigneeInput.value) {
+                    assigneeInput.value = uniqueNames[0];
+                }
+
+                const firstDate = parseFlexDate(matches[0].dateStr);
+                const lastDate = parseFlexDate(matches[matches.length - 1].dateStr);
+
+                if (firstDate) {
+                    document.getElementById('input-requested').value = firstDate;
+                }
+                if (lastDate) {
+                    document.getElementById('input-updated').value = lastDate;
+                }
+
+                const badge = document.getElementById('auto-parse-badge');
+                if (badge) {
+                    badge.classList.remove('opacity-0');
+                    setTimeout(() => badge.classList.add('opacity-0'), 3500);
+                }
+            }
+
+            const idInput = document.getElementById('input-id');
+            if (idInput && !idInput.value) {
+                const randomId = 'TCK-' + Math.floor(1000 + Math.random() * 9000);
+                idInput.value = randomId;
+            }
+        }
+
+        function parseFlexDate(str) {
+            try {
+                const d = new Date(str);
+                if (isNaN(d.getTime())) return null;
+                return d.toISOString().slice(0, 16);
+            } catch(e) {
+                return null;
+            }
+        }
+
+        window.onload = function() {
+            const saved = localStorage.getItem('qa_tickets_data');
+            if (saved) {
+                try {
+                    tickets = JSON.parse(saved);
+                } catch(e) {
+                    tickets = [];
+                }
+            } else {
+                tickets = [];
+                saveTicketsToStorage();
+            }
+
+            const savedSop = localStorage.getItem('qa_sop_rules');
+            const sopInput = document.getElementById('sop-rules-text');
+            if (sopInput) {
+                sopInput.value = savedSop || DEFAULT_QA_SOP;
+            }
+
+            updateGlobalStats();
+            populateThemeDropdowns();
+            renderTicketTable();
+            renderAssigneeGroupedView();
+            initAnalyticsCharts();
+        };
+
+        function switchTab(tabName) {
+            const views = ['analyze', 'list', 'grouped', 'analytics', 'sop'];
+            views.forEach(v => {
+                const viewEl = document.getElementById(`view-${v}`);
+                const btnEl = document.getElementById(`tab-btn-${v}`);
+                if (v === tabName) {
+                    viewEl?.classList.remove('hidden');
+                    btnEl?.classList.add('bg-white', 'text-pink-800', 'shadow-sm', 'border', 'border-pink-200');
+                } else {
+                    viewEl?.classList.add('hidden');
+                    btnEl?.classList.remove('bg-white', 'text-pink-800', 'shadow-sm', 'border', 'border-pink-200');
+                }
+            });
+
+            if (tabName === 'analytics') {
+                updateAnalyticsCharts();
+            }
+        }
+
+        function switchSopSubTab(subTabName) {
+            const subTabs = ['itsm', 'categories', 'nonnegotiables', 'guidelines', 'editor'];
+            subTabs.forEach(st => {
+                const content = document.getElementById(`sop-content-${st}`);
+                const btn = document.getElementById(`sop-subtab-${st}`);
+                if (st === subTabName) {
+                    content?.classList.remove('hidden');
+                    btn?.classList.add('bg-pink-600', 'text-white', 'shadow-sm');
+                    btn?.classList.remove('text-pink-700', 'hover:bg-pink-100');
+                } else {
+                    content?.classList.add('hidden');
+                    btn?.classList.remove('bg-pink-600', 'text-white', 'shadow-sm');
+                    btn?.classList.add('text-pink-700', 'hover:bg-pink-100');
+                }
+            });
+        }
+
+        function toggleChatDrawer() {
+            const drawer = document.getElementById('chat-drawer');
+            drawer?.classList.toggle('translate-x-full');
+        }
+
+        function openSheetsModal() {
+            document.getElementById('sheets-modal')?.classList.remove('hidden');
+        }
+
+        function closeSheetsModal() {
+            document.getElementById('sheets-modal')?.classList.add('hidden');
+        }
+
+        function clearFormInputs() {
+            document.getElementById('qa-input-form')?.reset();
+            showToast('Form cleared successfully.', 'Notice');
+        }
+
+        function handleTicketSubmit(event) {
+            event.preventDefault();
+            const newTicket = {
+                id: document.getElementById('input-id').value.trim(),
+                subject: document.getElementById('input-subject').value.trim(),
+                requester: document.getElementById('input-requester').value.trim() || 'N/A',
+                priority: document.getElementById('input-priority').value,
+                requested: document.getElementById('input-requested').value || new Date().toISOString().slice(0, 16),
+                updated: document.getElementById('input-updated').value || new Date().toISOString().slice(0, 16),
+                assignee: document.getElementById('input-assignee').value.trim() || 'Unassigned',
+                conversation: document.getElementById('input-conversation').value.trim(),
+                missed: document.getElementById('input-missed').value.trim() || 'None noted',
+                shouldDone: document.getElementById('input-should-done').value.trim() || 'None noted',
+                theme: document.getElementById('input-theme').value,
+                notes: document.getElementById('input-notes').value.trim() || 'None'
+            };
+
+            const existingIdx = tickets.findIndex(t => t.id === newTicket.id);
+            if (existingIdx >= 0) {
+                tickets[existingIdx] = newTicket;
+            } else {
+                tickets.push(newTicket);
+            }
+
+            saveTicketsToStorage();
+            clearFormInputs();
+            updateGlobalStats();
+            populateThemeDropdowns();
+            renderTicketTable();
+            renderAssigneeGroupedView();
+            updateAnalyticsCharts();
+
+            showToast(`Ticket ${newTicket.id} saved!`, 'Analysis Saved');
+            switchTab('list');
+        }
+
+        async function runAiAnalysis() {
+            const conversation = document.getElementById('input-conversation').value.trim();
+            const subject = document.getElementById('input-subject').value.trim();
+
+            if (!conversation) {
+                showToast('Please paste ticket information or conversation details first!', 'Missing Content');
+                return;
+            }
+
+            let apiKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+
+            const btn = document.getElementById('btn-ai-analyze');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Auditing against ITSM & SOP...</span>`;
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const sopRules = getActiveSopText();
+
+                const systemInstruction = `You are a Senior Customer Support Quality Assurance (QA) Analyst auditing Zendesk interactions.
+EVALUATE AGAINST GLOBAL ITSM/ITIL BEST PRACTICES AND THE FOLLOWING QA SOP FRAMEWORK.
+DO NOT ASSIGN OR CALCULATE NUMERICAL SCORES/POINTS.
+
+FRAMEWORK GUIDELINES:
+${sopRules}
+
+Also extract ticket metadata if present in thread:
+- "assignee": Agent name if detected
+- "requester": Customer name if detected
+- "missed": Process gaps, rubric violations, non-negotiables (⚑), SLA risks, or missing steps.
+- "shouldDone": Actionable, ideal steps per ITSM and SOP directives.
+- "theme": Choose ONE from ["Incident & SLA Management", "Product & Technical Knowledge", "Soft Skills & Tone", "Tool / System Usage", "Verification & Security", "First Contact Resolution (FCR)", "Proper Documentation (KCS)", "Process & Escalation Adherence", "Perfect Handling"].
+- "notes": Constructive coaching feedback for agent 1-on-1s.
+- "suggestedPriority": Low, Medium, High, or Urgent.`;
+
+                const promptText = `Evaluate this support interaction against ITSM & QA standards:
+Subject: ${subject || 'Not specified'}
+Conversation:
+${conversation}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "assignee": { "type": "STRING" },
+                                "requester": { "type": "STRING" },
+                                "missed": { "type": "STRING" },
+                                "shouldDone": { "type": "STRING" },
+                                "theme": { "type": "STRING" },
+                                "notes": { "type": "STRING" },
+                                "suggestedPriority": { "type": "STRING" }
+                            },
+                            required: ["missed", "shouldDone", "theme", "notes"]
+                        }
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API response status: ${response.status}`);
+
+                const result = await response.json();
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (jsonText) {
+                    const parsed = JSON.parse(jsonText);
+                    document.getElementById('input-missed').value = parsed.missed || '';
+                    document.getElementById('input-should-done').value = parsed.shouldDone || '';
+                    if (parsed.theme) document.getElementById('input-theme').value = parsed.theme;
+                    document.getElementById('input-notes').value = parsed.notes || '';
+                    if (parsed.suggestedPriority) document.getElementById('input-priority').value = parsed.suggestedPriority;
+                    
+                    if (parsed.assignee && !document.getElementById('input-assignee').value) {
+                        document.getElementById('input-assignee').value = parsed.assignee;
+                    }
+                    if (parsed.requester && !document.getElementById('input-requester').value) {
+                        document.getElementById('input-requester').value = parsed.requester;
+                    }
+
+                    showToast('AI audit complete! Findings benchmarked against ITSM & SOP standards.', 'Audit Complete');
+                }
+            } catch (err) {
+                console.error("AI Analysis error:", err);
+                showToast("Failed to analyze ticket via AI. Please check connection.", "Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function handleChatMessageSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            let apiKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+
+            appendChatMessage('user', message);
+            input.value = '';
+
+            const typingId = appendChatMessage('ai', 'Consulting ITSM Framework & ticket dataset...');
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const sopRules = getActiveSopText();
+
+                const systemInstruction = `You are a Senior ITSM Quality Assurance (QA) Co-Analyst.
+You are fully expert in ITIL Service Desk quality standards, Zendesk QA SOPs, Non-Negotiables, SLA Management, and Coaching.
+DO NOT SCORE TICKETS WITH POINTS. Focus on qualitative advice, coaching drafts, and process compliance.
+
+ACTIVE FRAMEWORK GUIDELINES:
+${sopRules}
+
+CURRENT DATABASE CONTEXT:
+${JSON.stringify(tickets, null, 2)}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: message }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "I was unable to process that query.";
+
+                removeChatMessage(typingId);
+                appendChatMessage('ai', aiResponse);
+
+            } catch (err) {
+                console.error("Chat API error:", err);
+                removeChatMessage(typingId);
+                appendChatMessage('ai', "Sorry, I encountered an error connecting to the AI Co-Analyst service.");
+            }
+        }
+
+        function appendChatMessage(sender, text) {
+            const container = document.getElementById('chat-messages');
+            const id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = `flex gap-2.5 ${sender === 'user' ? 'justify-end' : ''}`;
+
+            if (sender === 'user') {
+                div.innerHTML = `
+                    <div class="bg-pink-600 text-white p-3 rounded-2xl rounded-tr-none text-xs max-w-[85%] shadow-sm">
+                        <p class="font-bold text-[10px] text-pink-200 mb-0.5">You</p>
+                        <p class="leading-relaxed">${escapeHtml(text)}</p>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center flex-shrink-0 text-xs mt-1">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-pink-200 text-slate-700 shadow-sm max-w-[85%] space-y-1">
+                        <p class="font-bold text-pink-900 text-[10px]">Co-QA Analyst AI</p>
+                        <div class="leading-relaxed whitespace-pre-line">${escapeHtml(text)}</div>
+                    </div>
+                `;
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeChatMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function sendQuickPrompt(text) {
+            document.getElementById('chat-input').value = text;
+            handleChatMessageSubmit(new Event('submit'));
+        }
+
+        function updateGlobalStats() {
+            let green = 0, yellow = 0, red = 0;
+            tickets.forEach(t => {
+                const status = getSlaStatus(t.updated);
+                if (status === 'GREEN') green++;
+                else if (status === 'YELLOW') yellow++;
+                else if (status === 'RED') red++;
+            });
+
+            const statGreen = document.getElementById('stat-green-count');
+            const statYellow = document.getElementById('stat-yellow-count');
+            const statRed = document.getElementById('stat-red-count');
+            const badgeTotal = document.getElementById('badge-total-tickets');
+
+            if (statGreen) statGreen.innerText = green;
+            if (statYellow) statYellow.innerText = yellow;
+            if (statRed) statRed.innerText = red;
+            if (badgeTotal) badgeTotal.innerText = tickets.length;
+        }
+
+        function populateThemeDropdowns() {
+            const select = document.getElementById('theme-filter');
+            if (!select) return;
+            const currentVal = select.value;
+            const themes = Array.from(new Set(tickets.map(t => t.theme).filter(Boolean)));
+            select.innerHTML = '<option value="ALL">All QA Themes</option>';
+            themes.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.innerText = t;
+                select.appendChild(opt);
+            });
+            select.value = currentVal || 'ALL';
+        }
+
+        function renderTicketTable() {
+            const tbody = document.getElementById('ticket-table-body');
+            const emptyState = document.getElementById('table-empty-state');
+            if (!tbody) return;
+
+            const searchTerm = (document.getElementById('search-filter')?.value || '').toLowerCase();
+            const colorFilter = document.getElementById('status-color-filter')?.value || 'ALL';
+            const themeFilter = document.getElementById('theme-filter')?.value || 'ALL';
+
+            const filtered = tickets.filter(t => {
+                const matchesSearch = !searchTerm || 
+                    t.id.toLowerCase().includes(searchTerm) ||
+                    t.subject.toLowerCase().includes(searchTerm) ||
+                    t.assignee.toLowerCase().includes(searchTerm) ||
+                    t.theme.toLowerCase().includes(searchTerm);
+
+                const status = getSlaStatus(t.updated);
+                const matchesColor = colorFilter === 'ALL' || status === colorFilter;
+                const matchesTheme = themeFilter === 'ALL' || t.theme === themeFilter;
+
+                return matchesSearch && matchesColor && matchesTheme;
+            });
+
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState?.classList.remove('hidden');
+                return;
+            } else {
+                emptyState?.classList.add('hidden');
+            }
+
+            filtered.forEach(t => {
+                const status = getSlaStatus(t.updated);
+                const hrs = getHoursSinceUpdated(t.updated);
+                const age = getTicketAge(t.requested);
+
+                let rowClass = 'ticket-green';
+                if (status === 'YELLOW') rowClass = 'ticket-yellow';
+                if (status === 'RED') rowClass = 'ticket-red';
+
+                const tr = document.createElement('tr');
+                tr.className = `${rowClass} transition hover:opacity-90 font-medium text-[11px]`;
+                tr.innerHTML = `
+                    <td class="p-3 font-bold">${escapeHtml(t.id)}</td>
+                    <td class="p-3 font-semibold text-pink-950">${escapeHtml(t.subject)}</td>
+                    <td class="p-3">${escapeHtml(t.requester)}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-md font-bold text-[10px] ${getPriorityBadgeClass(t.priority)}">${escapeHtml(t.priority)}</span></td>
+                    <td class="p-3 whitespace-nowrap">${formatDate(t.requested)}</td>
+                    <td class="p-3 whitespace-nowrap">${formatDate(t.updated)}</td>
+                    <td class="p-3 font-bold">${escapeHtml(t.assignee)}</td>
+                    <td class="p-3 max-w-[200px] truncate" title="${escapeHtml(t.missed)}">${escapeHtml(t.missed)}</td>
+                    <td class="p-3 max-w-[200px] truncate" title="${escapeHtml(t.shouldDone)}">${escapeHtml(t.shouldDone)}</td>
+                    <td class="p-3 font-semibold">${escapeHtml(t.theme)}</td>
+                    <td class="p-3 max-w-[200px] truncate" title="${escapeHtml(t.notes)}">${escapeHtml(t.notes)}</td>
+                    <td class="p-3 text-center font-bold">${hrs} h</td>
+                    <td class="p-3 text-center font-medium">${age}</td>
+                    <td class="p-3 text-center space-x-1 whitespace-nowrap">
+                        <button onclick="viewTicketModal('${escapeHtml(t.id)}')" class="p-1.5 bg-white text-pink-700 hover:bg-pink-100 rounded-lg shadow-sm border border-pink-200" title="View Details">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                        <button onclick="deleteTicket('${escapeHtml(t.id)}')" class="p-1.5 bg-white text-rose-600 hover:bg-rose-100 rounded-lg shadow-sm border border-rose-200" title="Delete Ticket">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderAssigneeGroupedView() {
+            const container = document.getElementById('assignee-cards-container');
+            if (!container) return;
+
+            if (tickets.length === 0) {
+                container.innerHTML = `
+                    <div class="p-12 text-center bg-white rounded-2xl border border-pink-200 w-full">
+                        <p class="text-xs font-bold text-pink-950">No ticket data available for grouping</p>
+                        <p class="text-xs text-slate-500">Paste and submit Zendesk tickets to view assignee performance.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const grouped = {};
+            tickets.forEach(t => {
+                const name = t.assignee || 'Unassigned';
+                if (!grouped[name]) grouped[name] = [];
+                grouped[name].push(t);
+            });
+
+            container.innerHTML = '';
+
+            Object.keys(grouped).forEach(assignee => {
+                const list = grouped[assignee];
+                let green = 0, yellow = 0, red = 0;
+                list.forEach(t => {
+                    const st = getSlaStatus(t.updated);
+                    if (st === 'GREEN') green++;
+                    if (st === 'YELLOW') yellow++;
+                    if (st === 'RED') red++;
+                });
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl border border-pink-200 shadow-sm space-y-4 w-full";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-pink-100 pb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-pink-100 text-pink-700 font-bold flex items-center justify-center text-xs">
+                                ${escapeHtml(assignee.charAt(0).toUpperCase())}
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-pink-950">${escapeHtml(assignee)}</h3>
+                                <p class="text-[11px] text-slate-500">${list.length} Evaluated Ticket${list.length > 1 ? 's' : ''}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs font-semibold">
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">${green} Fresh</span>
+                            <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">${yellow} Stale</span>
+                            <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800">${red} Critical</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        ${list.map(t => {
+                            const st = getSlaStatus(t.updated);
+                            let colorBadge = 'bg-emerald-100 text-emerald-800';
+                            if (st === 'YELLOW') colorBadge = 'bg-amber-100 text-amber-800';
+                            if (st === 'RED') colorBadge = 'bg-rose-100 text-rose-800';
+
+                            return `
+                                <div class="p-3 bg-pink-50/50 rounded-xl border border-pink-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                    <div>
+                                        <span class="font-bold text-pink-900">[${escapeHtml(t.id)}]</span>
+                                        <span class="font-semibold text-slate-800 ml-1">${escapeHtml(t.subject)}</span>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">
+                                            <strong>Missed:</strong> ${escapeHtml(t.missed)}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2 whitespace-nowrap">
+                                        <span class="px-2 py-0.5 rounded ${colorBadge} font-bold text-[10px]">${st}</span>
+                                        <button onclick="viewTicketModal('${escapeHtml(t.id)}')" class="px-2.5 py-1 bg-white border border-pink-200 rounded-lg text-pink-700 hover:bg-pink-100 font-semibold text-[11px]">
+                                            Details
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function initAnalyticsCharts() {
+            updateAnalyticsCharts();
+        }
+
+        function updateAnalyticsCharts() {
+            const totalEl = document.getElementById('analytics-total');
+            if (totalEl) totalEl.innerText = tickets.length;
+
+            let green = 0, yellow = 0, red = 0;
+            const themeCounts = {};
+
+            tickets.forEach(t => {
+                const st = getSlaStatus(t.updated);
+                if (st === 'GREEN') green++;
+                if (st === 'YELLOW') yellow++;
+                if (st === 'RED') red++;
+
+                const theme = t.theme || 'Uncategorized';
+                themeCounts[theme] = (themeCounts[theme] || 0) + 1;
+            });
+
+            const grEl = document.getElementById('analytics-green');
+            const ylEl = document.getElementById('analytics-yellow');
+            const rdEl = document.getElementById('analytics-red');
+
+            if (grEl) grEl.innerText = green;
+            if (ylEl) ylEl.innerText = yellow;
+            if (rdEl) rdEl.innerText = red;
+
+            const themeCanvas = document.getElementById('themeChart');
+            if (themeCanvas) {
+                if (themeChartInstance) themeChartInstance.destroy();
+                themeChartInstance = new Chart(themeCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(themeCounts).length > 0 ? Object.keys(themeCounts) : ['No Data'],
+                        datasets: [{
+                            data: Object.values(themeCounts).length > 0 ? Object.values(themeCounts) : [1],
+                            backgroundColor: [
+                                '#db2777', '#f43f5e', '#ec4899', '#be185d', 
+                                '#831843', '#f472b6', '#fb7185', '#9d174d'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right' } }
+                    }
+                });
+            }
+
+            const priorityCanvas = document.getElementById('priorityChart');
+            if (priorityCanvas) {
+                if (priorityChartInstance) priorityChartInstance.destroy();
+
+                const prioData = { Low: 0, Medium: 0, High: 0, Urgent: 0 };
+                tickets.forEach(t => {
+                    if (prioData[t.priority] !== undefined) prioData[t.priority]++;
+                });
+
+                priorityChartInstance = new Chart(priorityCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(prioData),
+                        datasets: [{
+                            label: 'Tickets count',
+                            data: Object.values(prioData),
+                            backgroundColor: '#db2777'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+        }
+
+        function exportToExcel() {
+            if (tickets.length === 0) {
+                showToast('No ticket data available to export!', 'Export Notice');
+                return;
+            }
+
+            const headers = [
+                "ID", "Subject", "Requester", "Priority", 
+                "Requested (Date opened)", "Updated (Date last update)", "Assignee", 
+                "What was missed", "What should have been done", "QA Theme", 
+                "QA Notes", "Hours Since Updated", "Ticket age"
+            ];
+
+            const data = [headers];
+
+            tickets.forEach(t => {
+                const hrs = getHoursSinceUpdated(t.updated);
+                const age = getTicketAge(t.requested);
+                data.push([
+                    t.id,
+                    t.subject,
+                    t.requester,
+                    t.priority,
+                    formatDate(t.requested),
+                    formatDate(t.updated),
+                    t.assignee,
+                    t.missed,
+                    t.shouldDone,
+                    t.theme,
+                    t.notes,
+                    hrs,
+                    age
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(data);
+
+            tickets.forEach((t, index) => {
+                const rowIndex = index + 1;
+                const status = getSlaStatus(t.updated);
+                let fillColor = "ECFDF5";
+                if (status === 'YELLOW') fillColor = "FFFBEB";
+                if (status === 'RED') fillColor = "FEF2F2";
+
+                for (let col = 0; col < headers.length; col++) {
+                    const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: col });
+                    if (!ws[cellAddress]) continue;
+                    ws[cellAddress].s = {
+                        fill: { fgColor: { rgb: fillColor } },
+                        font: { name: "Calibri", sz: 10 }
+                    };
+                }
+            });
+
+            for (let col = 0; col < headers.length; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].s = {
+                        fill: { fgColor: { rgb: "831843" } },
+                        font: { name: "Calibri", sz: 11, bold: true, color: { rgb: "FFFFFF" } },
+                        alignment: { horizontal: "center", vertical: "center" }
+                    };
+                }
+            }
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "QA Analysis");
+            XLSX.writeFile(wb, `QA_Ticket_Analysis_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showToast('Excel file generated with full row SLA colors!', 'Export Success');
+        }
+
+        function copyTableForGoogleSheets() {
+            if (tickets.length === 0) {
+                showToast('No tickets available to copy!', 'Notice');
+                return;
+            }
+
+            const headers = [
+                "ID", "Subject", "Requester", "Priority", 
+                "Requested (Date opened)", "Updated (Date last update)", "Assignee", 
+                "What was missed", "What should have been done", "QA Theme", 
+                "QA Notes", "Hours Since Updated", "Ticket age"
+            ];
+
+            let tsvContent = headers.join('\t') + '\n';
+
+            tickets.forEach(t => {
+                const hrs = getHoursSinceUpdated(t.updated);
+                const age = getTicketAge(t.requested);
+                const row = [
+                    t.id,
+                    t.subject,
+                    t.requester,
+                    t.priority,
+                    formatDate(t.requested),
+                    formatDate(t.updated),
+                    t.assignee,
+                    cleanForTsv(t.missed),
+                    cleanForTsv(t.shouldDone),
+                    t.theme,
+                    cleanForTsv(t.notes),
+                    hrs,
+                    age
+                ];
+                tsvContent += row.join('\t') + '\n';
+            });
+
+            const tempArea = document.createElement('textarea');
+            tempArea.value = tsvContent;
+            document.body.appendChild(tempArea);
+            tempArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempArea);
+
+            showToast('TSV data copied to clipboard! Paste into Google Sheets cell A1 using ⌘ + V.', 'Copied to Clipboard');
+        }
+
+        function exportToCsv() {
+            if (tickets.length === 0) {
+                showToast('No ticket data to export!', 'Notice');
+                return;
+            }
+
+            const headers = [
+                "ID", "Subject", "Requester", "Priority", 
+                "Requested (Date opened)", "Updated (Date last update)", "Assignee", 
+                "What was missed", "What should have been done", "QA Theme", 
+                "QA Notes", "Hours Since Updated", "Ticket age"
+            ];
+
+            let csvContent = headers.map(h => `"${h}"`).join(',') + '\n';
+
+            tickets.forEach(t => {
+                const hrs = getHoursSinceUpdated(t.updated);
+                const age = getTicketAge(t.requested);
+                const row = [
+                    t.id, t.subject, t.requester, t.priority,
+                    formatDate(t.requested), formatDate(t.updated), t.assignee,
+                    t.missed, t.shouldDone, t.theme, t.notes, hrs, age
+                ];
+                csvContent += row.map(val => `"${String(val || '').replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `QA_Ticket_Analysis_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('CSV downloaded successfully!', 'Export Success');
+        }
+
+        function cleanForTsv(str) {
+            if (!str) return '';
+            return String(str).replace(/\r?\n|\r/g, ' ').replace(/\t/g, ' ');
+        }
+
+        function clearAllTickets() {
+            tickets = [];
+            saveTicketsToStorage();
+            updateGlobalStats();
+            renderTicketTable();
+            renderAssigneeGroupedView();
+            updateAnalyticsCharts();
+            showToast('All ticket data cleared from workspace.', 'Cleared Data');
+        }
+
+        function viewTicketModal(ticketId) {
+            const t = tickets.find(x => x.id === ticketId);
+            if (!t) return;
+
+            const modal = document.getElementById('ticket-modal');
+            document.getElementById('modal-ticket-id').innerText = t.id;
+            document.getElementById('modal-ticket-subject').innerText = t.subject;
+
+            const hrs = getHoursSinceUpdated(t.updated);
+            const age = getTicketAge(t.requested);
+
+            document.getElementById('modal-body').innerHTML = `
+                <div class="grid grid-cols-2 gap-3 bg-pink-50 p-3 rounded-xl">
+                    <div><span class="font-semibold text-slate-500">Assignee:</span> <strong class="text-pink-900">${escapeHtml(t.assignee)}</strong></div>
+                    <div><span class="font-semibold text-slate-500">Requester:</span> ${escapeHtml(t.requester)}</div>
+                    <div><span class="font-semibold text-slate-500">Priority:</span> ${escapeHtml(t.priority)}</div>
+                    <div><span class="font-semibold text-slate-500">QA Theme:</span> ${escapeHtml(t.theme)}</div>
+                    <div><span class="font-semibold text-slate-500">Hours Un-updated:</span> <strong class="text-pink-700">${hrs} hrs</strong></div>
+                    <div><span class="font-semibold text-slate-500">Total Age:</span> ${age}</div>
+                </div>
+
+                <div class="space-y-1">
+                    <h4 class="font-bold text-red-700">What was missed:</h4>
+                    <p class="p-2.5 bg-red-50 border border-red-200 rounded-lg text-slate-800">${escapeHtml(t.missed)}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <h4 class="font-bold text-emerald-700">What should have been done:</h4>
+                    <p class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-slate-800">${escapeHtml(t.shouldDone)}</p>
+                </div>
+
+                <div class="space-y-1">
+                    <h4 class="font-bold text-pink-900">QA Coaching Notes:</h4>
+                    <p class="p-2.5 bg-pink-50 border border-pink-200 rounded-lg text-slate-800">${escapeHtml(t.notes)}</p>
+                </div>
+
+                ${t.conversation ? `
+                <div class="space-y-1">
+                    <h4 class="font-bold text-slate-700">Full Interaction Log / Conversation:</h4>
+                    <pre class="p-3 bg-slate-900 text-slate-100 rounded-lg font-mono text-[11px] leading-relaxed overflow-x-auto max-h-48">${escapeHtml(t.conversation)}</pre>
+                </div>` : ''}
+            `;
+
+            modal?.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('ticket-modal')?.classList.add('hidden');
+        }
+
+        function deleteTicket(ticketId) {
+            tickets = tickets.filter(t => t.id !== ticketId);
+            saveTicketsToStorage();
+            updateGlobalStats();
+            renderTicketTable();
+            renderAssigneeGroupedView();
+            updateAnalyticsCharts();
+            showToast(`Deleted ticket ${ticketId}`, 'Deleted');
+        }
+
+        function resetFilters() {
+            const sInput = document.getElementById('search-filter');
+            const cInput = document.getElementById('status-color-filter');
+            const tInput = document.getElementById('theme-filter');
+            if (sInput) sInput.value = '';
+            if (cInput) cInput.value = 'ALL';
+            if (tInput) tInput.value = 'ALL';
+            renderTicketTable();
+            showToast('Filters reset.', 'Notice');
+        }
+
+        function getPriorityBadgeClass(priority) {
+            switch(priority) {
+                case 'Urgent': return 'bg-rose-100 text-rose-800 border border-rose-300';
+                case 'High': return 'bg-orange-100 text-orange-800 border border-orange-300';
+                case 'Medium': return 'bg-amber-100 text-amber-800 border border-amber-300';
+                default: return 'bg-slate-100 text-slate-700 border border-slate-300';
+            }
+        }
+
+        function formatDate(dateIso) {
+            if (!dateIso) return 'N/A';
+            const d = new Date(dateIso);
+            if (isNaN(d.getTime())) return dateIso;
+            return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
