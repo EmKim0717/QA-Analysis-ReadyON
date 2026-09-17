@@ -889,7 +889,7 @@ Thank you for coming back to us John! Let me check this right away..." required 
             if (statusEl) statusEl.innerHTML = '<span class="text-pink-600 font-semibold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Testing key connection with Gemini...</span>';
 
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`;
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -937,7 +937,7 @@ Thank you for coming back to us John! Let me check this right away..." required 
             btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Auditing against ITSM & SOP...</span>`;
 
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
                 const sopRules = getActiveSopText();
 
                 const systemInstruction = `You are a Senior Customer Support Quality Assurance (QA) Analyst auditing Zendesk interactions.
@@ -1045,7 +1045,7 @@ ${conversation}`;
             const typingId = appendChatMessage('ai', 'Consulting ITSM Framework & ticket dataset...');
 
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
                 const sopRules = getActiveSopText();
 
                 const systemInstruction = `You are a Senior ITSM Quality Assurance (QA) Co-Analyst.
