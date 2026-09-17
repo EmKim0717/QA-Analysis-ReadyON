@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QA Ticket Analysis</title>
-    <!-- Tailwind CSS -->
+    <title>QA Ticket Analysis Workstation</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,6 +22,7 @@
                             700: '#be185d',
                             800: '#9d174d',
                             900: '#831843',
+                            950: '#500724',
                         }
                     },
                     fontFamily: {
@@ -38,7 +39,7 @@
     <!-- XLSX library with style support for styled Excel exports -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         html, body {
@@ -46,10 +47,9 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
-            background-color: #fdf2f8; /* Pink 50 */
+            background-color: #fdf2f8;
             -webkit-font-smoothing: antialiased;
         }
-        /* Custom Mac Scrollbar */
         ::-webkit-scrollbar {
             width: 7px;
             height: 7px;
@@ -65,15 +65,15 @@
             background: #db2777;
         }
         .ticket-green {
-            background-color: #ecfdf5 !important; /* Emerald 50 */
+            background-color: #ecfdf5 !important;
             border-left: 4px solid #10b981 !important;
         }
         .ticket-yellow {
-            background-color: #fffbeb !important; /* Amber 50 */
+            background-color: #fffbeb !important;
             border-left: 4px solid #f59e0b !important;
         }
         .ticket-red {
-            background-color: #fef2f2 !important; /* Rose 50 */
+            background-color: #fef2f2 !important;
             border-left: 4px solid #ef4444 !important;
         }
     </style>
@@ -91,7 +91,7 @@
                         <span>QA Ticket Analysis</span>
                         <span class="text-[10px] bg-pink-100 text-pink-800 px-2 py-0.5 rounded-full font-semibold border border-pink-200 hidden sm:inline">ITSM / ITIL & SOP Workstation</span>
                     </h1>
-                    <p class="text-xs text-pink-600 font-medium">Full-Screen Enterprise Quality Assurance Workstation</p>
+                    <p class="text-xs text-pink-600 font-medium">Enterprise Quality Assurance & Coaching Platform</p>
                 </div>
             </div>
 
@@ -113,17 +113,22 @@
 
             <!-- Header Action Buttons -->
             <div class="flex items-center space-x-2">
+                <button onclick="loadSampleData()" title="Load realistic sample tickets for testing" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-300 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-vial text-pink-600"></i>
+                    <span class="hidden xl:inline">Sample Data</span>
+                </button>
+
                 <button onclick="exportToExcel()" title="Export styled Excel workbook" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-excel text-sm"></i>
                     <span class="hidden sm:inline">Export XLSX</span>
                 </button>
                 
-                <button onclick="openSheetsModal()" title="Export or open directly in Google Sheets for Mac" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                <button onclick="openSheetsModal()" title="Export or open directly in Google Sheets" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-table text-emerald-600 text-sm"></i>
                     <span class="hidden sm:inline">Google Sheets</span>
                 </button>
 
-                <button onclick="openApiKeyModal()" title="Configure Gemini API Key for GitHub Pages or Standalone deployment" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-300 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+                <button onclick="openApiKeyModal()" title="Configure Gemini API Key" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-300 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-key text-pink-600"></i>
                     <span class="hidden md:inline">API Key</span>
                 </button>
@@ -390,7 +395,7 @@ Thank you for coming back to us John! Let me check this right away..." required 
                         <i class="fa-solid fa-folder-open"></i>
                     </div>
                     <p class="text-xs font-bold text-pink-950">No QA Tickets found</p>
-                    <p class="text-xs text-slate-500">Paste a Zendesk ticket thread to begin your first QA evaluation.</p>
+                    <p class="text-xs text-slate-500">Paste a Zendesk ticket thread or click "Sample Data" in the top bar to get started.</p>
                 </div>
             </div>
         </section>
@@ -734,21 +739,29 @@ Thank you for coming back to us John! Let me check this right away..." required 
             </div>
 
             <p class="text-xs text-slate-600 leading-relaxed">
-                To use the <strong>AI Co-Analyst</strong> on <strong>GitHub Pages</strong> or standalone deployment, enter your Google Gemini API Key below.
+                Configure your custom <strong>Google Gemini API Key</strong> for AI audit and co-analyst queries on <strong>GitHub Pages</strong> or standalone deployment.
             </p>
 
             <div class="space-y-3 pt-1">
                 <div>
-                    <label class="block text-xs font-semibold text-pink-900 mb-1">Google Gemini API Key</label>
-                    <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 font-mono">
+                    <label class="block text-xs font-semibold text-pink-900 mb-1 flex justify-between">
+                        <span>Google Gemini API Key</span>
+                        <span id="api-key-badge" class="text-[10px] text-emerald-700 font-bold hidden"><i class="fa-solid fa-circle-check"></i> Key Saved</span>
+                    </label>
+                    <input type="password" id="input-api-key" placeholder="Paste your API key starting with AIzaSy..." class="w-full px-3.5 py-2.5 text-xs border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 font-mono">
                 </div>
 
-                <div class="flex gap-2">
+                <div id="api-key-status" class="text-xs"></div>
+
+                <div class="flex flex-wrap gap-2">
                     <button onclick="saveApiKey()" class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-2.5 rounded-xl text-xs shadow transition">
                         Save API Key
                     </button>
-                    <button onclick="clearApiKey()" class="bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-semibold px-4 py-2.5 rounded-xl text-xs transition">
-                        Clear
+                    <button onclick="testApiKey()" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-300 font-semibold px-3 py-2.5 rounded-xl text-xs transition flex items-center gap-1">
+                        <i class="fa-solid fa-vial"></i> Test Key
+                    </button>
+                    <button onclick="clearApiKey()" class="bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-semibold px-3 py-2.5 rounded-xl text-xs transition">
+                        Clear Key
                     </button>
                 </div>
             </div>
@@ -770,13 +783,70 @@ Thank you for coming back to us John! Let me check this right away..." required 
         let themeChartInstance = null;
         let priorityChartInstance = null;
 
-        // Hardcoded Default Gemini API Key for zero-config GitHub Pages deployment
-        const DEFAULT_API_KEY = "AQ.Ab8RN6IccWcc8c0H3iaVD1sZg3RRjCpAQKX4Et_KJ-uSk5x4ug";
+        // Default Gemini API Key fallback (Leave empty so users configure their own Google AI Studio key)
+        const DEFAULT_API_KEY = "";
+
+        const DEFAULT_QA_SOP = `ITSM & QA SOP BENCHMARK FRAMEWORK:
+1. Problem Understanding: Deep context comprehension, urgency alignment, and identifying true root cause.
+2. Resolution Ownership: Complete responses with clear next steps. Avoid excessive ping-ponging (schedule a call after 5 touches).
+3. Accuracy & Technical Depth: Proper troubleshooting prior to escalation. Verify logs, reproduction steps, and technical evidence.
+4. Internal Notes Quality: Mandatory structure -> Issue / Links / Actions Taken / Next Steps.
+5. Non-Negotiables (⚑): No generic non-answers, no unverified credentials/OTP shares in plain text, no improper macros, no escalating without initial troubleshooting.
+6. Communication Guidelines: Empower the user, address by first name, match greeting to stage, express empathy before instructions.`;
+
+        function showToast(message, title = 'Notification') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto bg-slate-900/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-pink-500/30 text-xs flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0';
+            toast.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-pink-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-pink-200 text-[11px]">${escapeHtml(title)}</h4>
+                    <p class="text-slate-300 leading-tight">${escapeHtml(message)}</p>
+                </div>
+            `;
+
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function getApiKey() {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey && savedKey.trim()) {
+                return savedKey.trim();
+            }
+            return DEFAULT_API_KEY.trim();
+        }
 
         function openApiKeyModal() {
-            const savedKey = localStorage.getItem('gemini_api_key') || DEFAULT_API_KEY;
+            const savedKey = getApiKey();
             const keyInput = document.getElementById('input-api-key');
+            const badge = document.getElementById('api-key-badge');
+            const statusEl = document.getElementById('api-key-status');
+            
             if (keyInput) keyInput.value = savedKey;
+            if (statusEl) statusEl.innerHTML = '';
+            
+            if (badge) {
+                if (savedKey) {
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+            
             document.getElementById('api-key-modal')?.classList.remove('hidden');
         }
 
@@ -789,6 +859,8 @@ Thank you for coming back to us John! Let me check this right away..." required 
             if (key) {
                 localStorage.setItem('gemini_api_key', key);
                 showToast('Gemini API Key saved successfully!', 'Saved');
+                const badge = document.getElementById('api-key-badge');
+                if (badge) badge.classList.remove('hidden');
                 closeApiKeyModal();
             } else {
                 showToast('Please enter a valid API Key.', 'Warning');
@@ -799,7 +871,228 @@ Thank you for coming back to us John! Let me check this right away..." required 
             localStorage.removeItem('gemini_api_key');
             const keyInput = document.getElementById('input-api-key');
             if (keyInput) keyInput.value = '';
-            showToast('API Key removed.', 'Cleared');
+            const statusEl = document.getElementById('api-key-status');
+            if (statusEl) statusEl.innerHTML = '';
+            const badge = document.getElementById('api-key-badge');
+            if (badge) badge.classList.add('hidden');
+            showToast('Custom API Key removed.', 'Cleared');
+        }
+
+        async function testApiKey() {
+            const key = document.getElementById('input-api-key')?.value.trim();
+            const statusEl = document.getElementById('api-key-status');
+            if (!key) {
+                showToast('Please enter an API Key to test.', 'Warning');
+                return;
+            }
+
+            if (statusEl) statusEl.innerHTML = '<span class="text-pink-600 font-semibold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Testing key connection with Gemini...</span>';
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Hello, reply with OK" }] }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.candidates) {
+                    if (statusEl) statusEl.innerHTML = '<span class="text-emerald-700 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Key is valid and working perfectly!</span>';
+                    showToast('Gemini API key connection test passed!', 'Connection Verified');
+                } else {
+                    const errorMsg = data?.error?.message || `HTTP ${response.status}`;
+                    if (statusEl) statusEl.innerHTML = `<span class="text-rose-700 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Test failed: ${escapeHtml(errorMsg)}</span>`;
+                    showToast(`API Key Test Failed: ${errorMsg}`, 'Validation Error');
+                }
+            } catch (err) {
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-700 font-semibold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Network error: ${escapeHtml(err.message)}</span>`;
+                showToast('Network error while testing API Key.', 'Error');
+            }
+        }
+
+        async function runAiAnalysis() {
+            const conversation = document.getElementById('input-conversation').value.trim();
+            const subject = document.getElementById('input-subject').value.trim();
+
+            if (!conversation) {
+                showToast('Please paste ticket information or conversation details first!', 'Missing Content');
+                return;
+            }
+
+            let apiKey = getApiKey();
+
+            if (!apiKey) {
+                showToast('No Gemini API Key found. Please click "API Key" in top bar to configure!', 'API Key Required');
+                openApiKeyModal();
+                return;
+            }
+
+            const btn = document.getElementById('btn-ai-analyze');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Auditing against ITSM & SOP...</span>`;
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const sopRules = getActiveSopText();
+
+                const systemInstruction = `You are a Senior Customer Support Quality Assurance (QA) Analyst auditing Zendesk interactions.
+EVALUATE AGAINST GLOBAL ITSM/ITIL BEST PRACTICES AND THE FOLLOWING QA SOP FRAMEWORK.
+DO NOT ASSIGN OR CALCULATE NUMERICAL SCORES/POINTS.
+
+FRAMEWORK GUIDELINES:
+${sopRules}
+
+Also extract ticket metadata if present in thread:
+- "assignee": Agent name if detected
+- "requester": Customer name if detected
+- "missed": Process gaps, rubric violations, non-negotiables (⚑), SLA risks, or missing steps.
+- "shouldDone": Actionable, ideal steps per ITSM and SOP directives.
+- "theme": Choose ONE from ["Incident & SLA Management", "Product & Technical Knowledge", "Soft Skills & Tone", "Tool / System Usage", "Verification & Security", "First Contact Resolution (FCR)", "Proper Documentation (KCS)", "Process & Escalation Adherence", "Perfect Handling"].
+- "notes": Constructive coaching feedback for agent 1-on-1s.
+- "suggestedPriority": Low, Medium, High, or Urgent.`;
+
+                const promptText = `Evaluate this support interaction against ITSM & QA standards:
+Subject: ${subject || 'Not specified'}
+Conversation:
+${conversation}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "assignee": { "type": "STRING" },
+                                "requester": { "type": "STRING" },
+                                "missed": { "type": "STRING" },
+                                "shouldDone": { "type": "STRING" },
+                                "theme": { "type": "STRING" },
+                                "notes": { "type": "STRING" },
+                                "suggestedPriority": { "type": "STRING" }
+                            },
+                            required: ["missed", "shouldDone", "theme", "notes"]
+                        }
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = result?.error?.message || `HTTP ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (jsonText) {
+                    const parsed = JSON.parse(jsonText);
+                    document.getElementById('input-missed').value = parsed.missed || '';
+                    document.getElementById('input-should-done').value = parsed.shouldDone || '';
+                    if (parsed.theme) document.getElementById('input-theme').value = parsed.theme;
+                    document.getElementById('input-notes').value = parsed.notes || '';
+                    if (parsed.suggestedPriority) document.getElementById('input-priority').value = parsed.suggestedPriority;
+                    
+                    if (parsed.assignee && !document.getElementById('input-assignee').value) {
+                        document.getElementById('input-assignee').value = parsed.assignee;
+                    }
+                    if (parsed.requester && !document.getElementById('input-requester').value) {
+                        document.getElementById('input-requester').value = parsed.requester;
+                    }
+
+                    showToast('AI audit complete! Findings benchmarked against ITSM & SOP standards.', 'Audit Complete');
+                } else {
+                    throw new Error("No response generated by Gemini model.");
+                }
+            } catch (err) {
+                console.error("AI Analysis error:", err);
+                showToast(`AI Audit Failed: ${err.message}`, "Error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function handleChatMessageSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            let apiKey = getApiKey();
+
+            if (!apiKey) {
+                showToast('Please set your Gemini API Key in top bar to chat with AI Co-Analyst.', 'API Key Required');
+                openApiKeyModal();
+                return;
+            }
+
+            appendChatMessage('user', message);
+            input.value = '';
+
+            const typingId = appendChatMessage('ai', 'Consulting ITSM Framework & ticket dataset...');
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const sopRules = getActiveSopText();
+
+                const systemInstruction = `You are a Senior ITSM Quality Assurance (QA) Co-Analyst.
+You are fully expert in ITIL Service Desk quality standards, Zendesk QA SOPs, Non-Negotiables, SLA Management, and Coaching.
+DO NOT SCORE TICKETS WITH POINTS. Focus on qualitative advice, coaching drafts, and process compliance.
+
+ACTIVE FRAMEWORK GUIDELINES:
+${sopRules}
+
+CURRENT DATABASE CONTEXT:
+${JSON.stringify(tickets, null, 2)}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: message }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = result?.error?.message || `HTTP ${response.status}`;
+                    throw new Error(errorMsg);
+                }
+
+                const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "I was unable to process that query.";
+
+                removeChatMessage(typingId);
+                appendChatMessage('ai', aiResponse);
+
+            } catch (err) {
+                console.error("Chat API error:", err);
+                removeChatMessage(typingId);
+                appendChatMessage('ai', `API Error: ${err.message}. Please check your API key settings.`);
+            }
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('gemini_api_key');
+            const keyInput = document.getElementById('input-api-key');
+            if (keyInput) keyInput.value = '';
+            showToast('Custom API Key removed. Using default key.', 'Cleared');
         }
 
         function saveTicketsToStorage() {
@@ -931,12 +1224,79 @@ Thank you for coming back to us John! Let me check this right away..." required 
                 sopInput.value = savedSop || DEFAULT_QA_SOP;
             }
 
+            if (tickets.length === 0) {
+                loadSampleData(false);
+            } else {
+                updateGlobalStats();
+                populateThemeDropdowns();
+                renderTicketTable();
+                renderAssigneeGroupedView();
+                initAnalyticsCharts();
+            }
+        };
+
+        function loadSampleData(showNotification = true) {
+            const now = new Date();
+            const dateRecent = new Date(now.getTime() - (12 * 3600 * 1000)).toISOString().slice(0, 16);
+            const dateMedium = new Date(now.getTime() - (60 * 3600 * 1000)).toISOString().slice(0, 16);
+            const dateOld = new Date(now.getTime() - (120 * 3600 * 1000)).toISOString().slice(0, 16);
+
+            tickets = [
+                {
+                    id: "TCK-8921",
+                    subject: "Password Reset Request Failure",
+                    requester: "Alex Rivera",
+                    priority: "High",
+                    requested: dateRecent,
+                    updated: dateRecent,
+                    assignee: "Sarah Jenkins",
+                    conversation: "Alex Rivera, Sept 15 2026 09:00\nI cannot reset my SSO password.\n\nSarah Jenkins, Sept 15 2026 09:15\nHi Alex, I have updated your account and sent you a temp pass.",
+                    missed: "Did not verify identity prior to resetting password. Shared temporary credentials in plain text.",
+                    shouldDone: "Verify identity via registered MFA phone or manager authorization before credentials modification.",
+                    theme: "Verification & Security",
+                    notes: "Coaching required on Security Non-Negotiables ⚑. Never share plain text credentials.",
+                },
+                {
+                    id: "TCK-4109",
+                    subject: "API Rate Limiting 429 Errors",
+                    requester: "Dev Team Ops",
+                    priority: "Urgent",
+                    requested: dateOld,
+                    updated: dateOld,
+                    assignee: "Marcus Vance",
+                    conversation: "Dev Team Ops, Sept 10 2026 14:00\nWe are getting 429 rate limit exceeded on endpoint /v2/orders.\n\nMarcus Vance, Sept 10 2026 14:30\nPlease check documentation.",
+                    missed: "Escalated without checking API gateway logs. Gave generic response ignoring user query context.",
+                    shouldDone: "Review rate limit configuration, check API gateway telemetry, and provide clear retry headers guidance.",
+                    theme: "Process & Escalation Adherence",
+                    notes: "SLA Overdue (>96h). Marcus needs coaching on First Contact Resolution and proper troubleshooting before reply.",
+                },
+                {
+                    id: "TCK-6204",
+                    subject: "Billing Roster Mismatch in Portal",
+                    requester: "Elena Rostova",
+                    priority: "Medium",
+                    requested: dateMedium,
+                    updated: dateMedium,
+                    assignee: "Sarah Jenkins",
+                    conversation: "Elena Rostova, Sept 12 2026 11:00\nOur monthly invoice lists 45 seats but we only have 40 active users.\n\nSarah Jenkins, Sept 12 2026 11:45\nLet me forward this to Finance.",
+                    missed: "Missing internal notes structure. Did not check subscription history before tier escalation.",
+                    shouldDone: "Cross-reference user audit logs with active seat allocation and log structured internal note.",
+                    theme: "Proper Documentation (KCS)",
+                    notes: "Ensure internal notes follow mandatory format: Issue / Links / Actions Taken / Next Actions.",
+                }
+            ];
+
+            saveTicketsToStorage();
             updateGlobalStats();
             populateThemeDropdowns();
             renderTicketTable();
             renderAssigneeGroupedView();
-            initAnalyticsCharts();
-        };
+            updateAnalyticsCharts();
+
+            if (showNotification) {
+                showToast('Sample ITSM tickets loaded for evaluation!', 'Sample Data');
+            }
+        }
 
         function switchTab(tabName) {
             const views = ['analyze', 'list', 'grouped', 'analytics', 'sop'];
@@ -1120,7 +1480,7 @@ ${conversation}`;
                 }
             } catch (err) {
                 console.error("AI Analysis error:", err);
-                showToast("Failed to analyze ticket via AI. Please check connection.", "Error");
+                showToast("Failed to analyze ticket via AI. Please check API key configuration.", "Error");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
@@ -1174,7 +1534,7 @@ ${JSON.stringify(tickets, null, 2)}`;
             } catch (err) {
                 console.error("Chat API error:", err);
                 removeChatMessage(typingId);
-                appendChatMessage('ai', "Sorry, I encountered an error connecting to the AI Co-Analyst service.");
+                appendChatMessage('ai', "Sorry, I encountered an error connecting to the AI Co-Analyst service. Please check your API key.");
             }
         }
 
